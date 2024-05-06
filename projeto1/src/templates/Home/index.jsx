@@ -1,70 +1,42 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useFetch } from './use-fetch';
 
 import './styles.css';
 
-import { loadPosts } from '../../utils/load-post';
-import { Posts } from '../../components/Posts';
-import Contador from '../../components/Contador';
-import { Button } from '../../components/Button';
-import { TextInput } from '../../components/TextInput';
-
 export const Home = () => {
-  const [posts, setPosts] = useState([]);
-  const [allPosts, setAllPosts] = useState([]);
-  const [page, setPage] = useState(0);
-  const [postsPerPage] = useState(10);
-  const [searchValue, setSearchValue] = useState('');
+  const [postId, setPostId] = useState('');
+  const json = 'https://jsonplaceholder.typicode.com/posts/' + postId;
+  const [result, loading] = useFetch(json, {
+    method: 'GET',
+    headers: {
+      abc: '2' + postId,
+    },
+  });
 
-  const noMorePosts = page + postsPerPage >= allPosts.length;
+  if (loading) {
+    return <p>Loading...</p>;
+  }
 
-  const filteredPosts = searchValue
-    ? allPosts.filter((post) => {
-        return post.title.toLowerCase().includes(searchValue.toLowerCase());
-      })
-    : posts;
-
-  const handleLoadPosts = useCallback(async (page, postsPerPage) => {
-    const postsAndPhotos = await loadPosts();
-
-    setPosts(postsAndPhotos.slice(page, postsPerPage));
-    setAllPosts(postsAndPhotos);
-  }, []);
-
-  useEffect(() => {
-    handleLoadPosts(0, postsPerPage);
-  }, [handleLoadPosts, postsPerPage]);
-
-  const loadMorePosts = () => {
-    const nextPage = page + postsPerPage;
-    const nextPosts = allPosts.slice(nextPage, nextPage + postsPerPage);
-    posts.push(...nextPosts);
-
-    setPosts(posts);
-    setPage(nextPage);
+  const handlClick = (id) => {
+    setPostId(id);
   };
 
-  const handleChange = (e) => {
-    const { value } = e.target;
-
-    setSearchValue(value);
-  };
-
-  return (
-    <section className="container">
-      <div className="search-container">
-        {!!searchValue && <h1>Search value {searchValue}</h1>}
-
-        <TextInput handleChange={handleChange} searchValue={searchValue} type="search" />
+  if (!loading && result) {
+    // 123455
+    return (
+      <div>
+        {result?.length > 0 ? (
+          result.map((p) => (
+            <div key={`post-${p.id}`} onClick={() => handlClick(p.id)}>
+              <p>{p.title}</p>
+            </div>
+          ))
+        ) : (
+          <div onClick={() => handlClick('')}>
+            <p>{result.title}</p>
+          </div>
+        )}
       </div>
-
-      {filteredPosts.length > 0 && <Posts posts={filteredPosts} />}
-
-      {filteredPosts.length === 0 && <p>Não existem posts</p>}
-
-      <div className="button-container">
-        {!searchValue && <Button text="alguma coisa" onClick={loadMorePosts} disabled={noMorePosts} />}
-      </div>
-      <Contador />
-    </section>
-  );
+    );
+  }
 };
